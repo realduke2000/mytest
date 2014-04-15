@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"algorithms/qsort"
+	"algorithms/bubblesort"
 )
 
 var infile *string = flag.String("i", "unsorted.dat", "File contains values for sorting")
@@ -27,7 +29,7 @@ func readValues(infile string)(values []int, err error){
 	values = make([]int, 0)
 
 	for {
-		line, isPrefix, err1 := br.Readline()
+		line, isPrefix, err1 := br.ReadLine()
 
 		if err1 != nil {
 			if err1 != nil {
@@ -57,7 +59,7 @@ func readValues(infile string)(values []int, err error){
 }
 
 func writeValues(values []int, outfile string) error {
-	file err := os.Create(outfile)
+	file, err := os.Create(outfile)
 
 	if err != nil {
 		fmt.Println("Failed to create outfile ", outfile)
@@ -75,5 +77,4 @@ func writeValues(values []int, outfile string) error {
 }
 
 func main(){
-	flag.Parse()
 }
