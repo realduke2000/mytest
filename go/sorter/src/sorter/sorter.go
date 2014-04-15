@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"time"
 	"algorithms/qsort"
 	"algorithms/bubblesort"
 )
@@ -77,4 +78,28 @@ func writeValues(values []int, outfile string) error {
 }
 
 func main(){
+	flag.Parse()
+
+	if infile != nil {
+		fmt.Println("infile =", *infile, "outfile =", *outfile, "algorithm =", *algorithm)
+	}
+
+	values, err := readValues(*infile)
+	if err == nil {
+		t1 := time.Now()
+		switch *algorithm {
+			case "qsort":
+				qsort.Qsort(values)
+			case "bubblesort":
+				bubblesort.Bubblesort(values)
+			default:
+				fmt.Println("Sorting algorithm", *algorithm, "is either unknown or unsupported")
+
+		}
+		t2 := time.Now()
+		fmt.Println("The sorting process costs", t2.Sub(t1), "to complete")
+		writeValues(values, *outfile)
+	} else {
+		fmt.Println(err)
+	}
 }
