@@ -2,7 +2,7 @@ package leetcode
 
 import "encoding/hex"
 
-func hashAnagrams(s string) string {
+func hashAnagrams49(s string) string {
 	hash := make([]byte, 256)
 	for i, _ := range hash {
 		hash[i] = 0
@@ -16,7 +16,7 @@ func hashAnagrams(s string) string {
 func groupAnagrams(strs []string) [][]string {
 	hash := make(map[string][]string, 0)
 	for _, s := range strs {
-		k := hashAnagrams(s)
+		k := hashAnagrams49(s)
 		if _, ok := hash[k]; ok {
 			hash[k] = append(hash[k], s)
 		} else {

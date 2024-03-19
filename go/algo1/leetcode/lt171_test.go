@@ -145,5 +145,19 @@ func TestTree110(t *testing.T) {
 func TestContinue(t *testing.T) {
 	ans := longestConsecutive([]int{0, 3, 7, 2, 5, 8, 4, 6, 0, 1})
 	fmt.Println(ans)
+}
 
+func TestLogSub(t *testing.T) {
+	ans := lengthOfLongestSubstring("bbbbb")
+	fmt.Printf("ans=%d\n", ans)
+}
+
+func TestThree(t *testing.T) {
+	ans := threeSum([]int{-1, 0, 1, 2, -1, -4})
+	fmt.Printf("ans: %v\n", ans)
+}
+
+func TestAnagram(t *testing.T) {
+	ans := findAnagrams("ababababab", "aab")
+	fmt.Printf("%v\n", ans)
 }
