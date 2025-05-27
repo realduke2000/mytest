@@ -13,6 +13,11 @@ func Test_titleToNumber(t *testing.T) {
 	fmt.Printf("%v\n", titleToNumber("AZ"))
 }
 
+func TestPointer(t *testing.T) {
+	p := new([]int)
+	fmt.Printf("%v\n", p)
+}
+
 func TestNum(t *testing.T) {
 	head := &ListNode{}
 	data := []int{1, 2, 6, 3, 4, 5, 6}
@@ -160,4 +165,32 @@ func TestThree(t *testing.T) {
 func TestAnagram(t *testing.T) {
 	ans := findAnagrams("ababababab", "aab")
 	fmt.Printf("%v\n", ans)
+}
+
+func TestTwoSum(t *testing.T) {
+	ans := twoSum([]int{-1, -2, -3, -4, -5}, -8)
+	fmt.Println(ans)
+}
+
+func TestMaxSubArr(t *testing.T) {
+	ans := maxSubArray([]int{-2, 1, -3, 4, -1, 2, 1, -5, 4})
+	fmt.Println(ans)
+}
+
+func TestMerge(t *testing.T) {
+	ans := merge([][]int{
+		{1, 4},
+		{0, 4},
+	})
+	fmt.Printf("%v\n", ans)
+}
+
+func TestChann(t *testing.T) {
+	ch := make(chan int, 1)
+	_, ok := <-ch
+	if ok {
+		fmt.Printf("ok")
+	} else {
+		fmt.Println("no ok")
+	}
 }
