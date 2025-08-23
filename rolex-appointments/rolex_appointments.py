@@ -5,14 +5,16 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+from selenium.common.exceptions import NoSuchElementException,TimeoutException
+
 # 📅 设置目标预约日期
-target_date = "2025-07-30"  # 根据实际情况修改
+target_date = "2025-08-31"  # 根据实际情况修改
 # 设置姓名和手机号变量
 user_name = "홍길동"       # 替换为实际姓名
 user_phone = "01012345678" # 替换为实际手机号
 
 def log_step(step):
-    print(f"\n🔹 {step} - 开始")
+    print(f"\n {step} - Started")
     time.sleep(0.3)
 
 def run_chronodigm_appointment_v8():
@@ -22,75 +24,115 @@ def run_chronodigm_appointment_v8():
 
     try:
         # Step 1: 打开页面
-        log_step("Step 1: 打开预约页面")
+        log_step("Step 1: Open appointment page")
+        
+        # mock, open debugger
+        driver.get("about:blank")
+        time.sleep(10)
+
         driver.get("https://www.chronodigmwatch.co.kr/rolex/contact-seoul/appointment")
         WebDriverWait(driver, 10).until(lambda d: d.execute_script("return document.readyState") == "complete")
 
         # Step 1.1: 接受 cookie
         try:
-            log_step("Step 1.1: 尝试点击 cookie 弹窗")
+            log_step("Step 1.1: try to click cookie pop-up")
             cookie_btn = WebDriverWait(driver, 3).until(EC.element_to_be_clickable(
                 (By.XPATH, '/html/body/div[1]/div[1]/div/div/button[2]')
             ))
             cookie_btn.click()
-            print("✅ 已点击 cookie 弹窗")
+            print("✅ clicked cookie pop-up")
         except:
-            print("⚠️ 未检测到 cookie 弹窗，继续")
+            print("did not detect cookie pop-up, continue")
 
         # Step 2: 点击 “서비스 관련 시계 접수 및 수령”
-        log_step("Step 2: 点击服务类型按钮")
+        log_step("Step 2: click appointment services")
+        elem = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="fappointment"]/div[1]/div/div/a[1]')))
+
+        # scroll
+        driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", elem)
+
+        # click it
         wait.until(EC.element_to_be_clickable((
-            By.XPATH, '/html/body/div[2]/main/section[1]/div/div/div[2]/form[1]/div[1]/div/div/a[2]'
+            By.XPATH, '//*[@id="fappointment"]/div[1]/div/div/a[1]'
         ))).click()
 
-        # Step 3: 点击 “동의합니다”
-        log_step("Step 3: 点击同意按钮")
+        # mock, add breakpoint
+        time.sleep(10)
+
+        # Step 3.1: 点击 “동의합니다”
+        log_step("Step 3.1: click agree button")
         wait.until(EC.element_to_be_clickable((
-            By.XPATH, '/html/body/div[2]/main/section[1]/div/div/div[2]/form[1]/div[2]/footer/button'
+            By.XPATH, '//*[@id="fappointment"]/div[2]/footer/button'
         ))).click()
+
+        # mock, clear data.popup
+        print("clearing data.popup")
+        time.sleep(30)
+
+        # Step 3.2 
+        log_step("Step 3.2 check if error dialog pop-up")
+        try:
+            popup = wait.until(EC.presence_of_element_located((By.ID, "end_popup")))
+            print("appointment is not open to book")
+            raise Exception("appointment is not open to book")
+        except TimeoutException:
+            print("not end_popup element, try to book appointment")
+        
+
 
         # Step 4: 选择预约日期
-        log_step(f"Step 4: 选择预约日期 {target_date}")
+        log_step(f"Step 4: select appointment date {target_date}")
+        
+        # mock available date
+        target_li = driver.find_element(By.CSS_SELECTOR, '#datetime_form li[data-date="%s"]' % target_date)
+        driver.execute_script("arguments[0].classList.remove('off');", target_li)
+
         date_xpath = f'//li[@data-date="{target_date}"]'
         wait.until(EC.element_to_be_clickable((By.XPATH, date_xpath))).click()
 
         # Step 5: 选择最早时间
-        log_step("Step 5: 等待并点击该日最早可用时间")
+        log_step("Step 5: wait and select the earliest timeslot")
+        
+        # mock available timeslot
+        time_slot = driver.find_element(By.CSS_SELECTOR, f'.time-slot[data-date="{target_date}"]')
+        li_element = time_slot.find_element(By.CSS_SELECTOR, f'li[data-time="960"]')
+        driver.execute_script("arguments[0].classList.remove('off');", li_element)
+
         slot_container_xpath = f'//div[@data-date="{target_date}" and contains(@class, "time-slot") and contains(@style, "display: block")]'
         WebDriverWait(driver, 7).until(EC.visibility_of_element_located((By.XPATH, slot_container_xpath)))
         time_items = driver.find_elements(By.XPATH, f'{slot_container_xpath}//li[@data-time and not(contains(@class, "off"))]')
         if not time_items:
-            raise Exception("❌ 没有可用的预约时间！")
+            raise Exception("no available timeslot")
         first_time_item = time_items[0]
         driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", first_time_item)
         time.sleep(0.5)
         driver.execute_script("arguments[0].click();", first_time_item)
-        print("✅ 点击了时间：", first_time_item.text)
+        print("clicked time slot:", first_time_item.text)
         WebDriverWait(driver, 5).until(lambda d: "active" in first_time_item.get_attribute("class"))
-        print("✅ 时间选择成功，状态变为 active")
+        print("selected time slot successfully")
 
-        # Step 6: 点击 “다음”
-        log_step("Step 6: 点击 다음")
+        # Step 6: click “다음 >”
+        log_step("Step 6: click next")
 
         # ✅ 应该在点击之前记录窗口句柄
         before_handles = driver.window_handles
-        print("🪟 Step 6 前窗口句柄:", before_handles)
+        print(" Step 6 original windows handler:", before_handles)
 
-        next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//button[contains(text(), "다음")]')))
+        next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, '//button[contains(text(),"다음")]')))
         driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", next_btn)
         time.sleep(0.5)
         next_btn.click()
-        print("✅ 点击了 ‘다음’ 以打开实名认证窗口")
+        print("clicked confirm to open safe.ok-name")
 
 
         # Step 7: 切换到实名认证窗口
-        log_step("Step 7: 切换到实名认证窗口")
+        log_step("Step 7: switching to safe.ok-name window")
 
         try:
             # 等待新窗口弹出（窗口数量增加）
             WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > len(before_handles))
             after_handles = driver.window_handles
-            print("🪟 当前所有窗口（Step 7）:", after_handles)
+            print("all current windows（Step 7）:", after_handles)
 
             # 获取新窗口句柄
             new_windows = list(set(after_handles) - set(before_handles))
@@ -209,7 +251,8 @@ def run_chronodigm_appointment_v8():
 
 
     except Exception as e:
-        print(f"\n❌ 出错: {e}")
+        print(f"\nuncaught exception: {e}")
+        print(str(e))
     finally:
         driver.quit()
 
