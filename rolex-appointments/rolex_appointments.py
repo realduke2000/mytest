@@ -1,4 +1,5 @@
 import time
+import sys
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
@@ -8,11 +9,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import NoSuchElementException,TimeoutException
 
 # 📅 设置目标预约日期
-target_date = "2025-08-31"  # 根据实际情况修改
+g_target_date = "2025-08-31"  # 根据实际情况修改
 # 设置姓名和手机号变量
-agency = "agency-kt" # 替换为实际运营商: "agency-skt", "agency-kt", "agency-lgu", "agency-and"
-user_name = "홍길동"       # 替换为实际姓名
-user_phone = "01012345678" # 替换为实际手机号
+g_agency = "agency-lgu" # 替换为实际运营商: "agency-skt", "agency-kt", "agency-lgu", "agency-and"
+g_user_name = "김분조"       # 替换为实际姓名
+g_user_phone = "010-5101-5251" # 替换为实际手机号
 
 
 enable_debugger = True # 关闭，改为False
@@ -21,7 +22,7 @@ def log_step(step):
     print(f"\n {step} - Started")
     time.sleep(0.3)
 
-def run_chronodigm_appointment_v8():
+def run_chronodigm_appointment_v8(target_date, agency, user_name, user_phone):
     options = Options()
     driver = webdriver.Firefox(options=options)
     wait = WebDriverWait(driver, 15)
@@ -264,4 +265,10 @@ def run_chronodigm_appointment_v8():
     finally:
         driver.quit()
 
-run_chronodigm_appointment_v8()
+
+
+if __name__ == "__main__":
+    target_date = g_target_date
+    if sys.argv[1] != "":
+        target_date = sys.argv[1]
+    run_chronodigm_appointment_v8(g_target_date, g_agency, g_user_name, g_user_phone)
