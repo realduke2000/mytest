@@ -2,6 +2,7 @@ import time
 import sys
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -16,14 +17,22 @@ g_user_name = "김분조"       # 替换为实际姓名
 g_user_phone = "010-5101-5251" # 替换为实际手机号
 
 
-enable_debugger = True # 关闭，改为False
+enable_debugger = False # 关闭，改为False
 
 def log_step(step):
     print(f"\n {step} - Started")
     time.sleep(0.3)
 
 def run_chronodigm_appointment_v8(target_date, agency, user_name, user_phone):
+    
+    profile = FirefoxProfile()
+    #profile.set_preference("network.cookie.cookieBehavior", 2)
+    #profile.set_preference("network.cookie.lifetimePolicy", 2)
+    profile.set_preference("browser.privatebrowsing.autostart", True)
+    
     options = Options()
+    options.profile = profile 
+
     driver = webdriver.Firefox(options=options)
     wait = WebDriverWait(driver, 15)
 
@@ -271,4 +280,4 @@ if __name__ == "__main__":
     target_date = g_target_date
     if sys.argv[1] != "":
         target_date = sys.argv[1]
-    run_chronodigm_appointment_v8(g_target_date, g_agency, g_user_name, g_user_phone)
+    run_chronodigm_appointment_v8(target_date, g_agency, g_user_name, g_user_phone)
