@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
 var (
 	fadd = add
 )
@@ -54,7 +55,7 @@ func TestCoin(t *testing.T) {
 	fmt.Println(ans)
 }
 
-func TestBase64(t *testing.T){
+func TestBase64(t *testing.T) {
 	s, _ := base64.RawURLEncoding.DecodeString("YXJmLnhtbA")
 	fmt.Println(string(s))
 
@@ -69,10 +70,10 @@ func dg(n int) {
 	if n == 1 {
 		fmt.Print("A")
 	} else {
-		dg(n-1)
-		m := byte('A' + n-1)
+		dg(n - 1)
+		m := byte('A' + n - 1)
 		fmt.Printf(string(m))
-		dg(n-1)
+		dg(n - 1)
 	}
 }
 
@@ -86,7 +87,7 @@ func Test62(t *testing.T) {
 	fmt.Println(ans)
 }
 func Test64(t *testing.T) {
-	input:=[][]int {[]int{1,3,1},[]int{1,5,1},[]int{4,2,1}}
+	input := [][]int{[]int{1, 3, 1}, []int{1, 5, 1}, []int{4, 2, 1}}
 	ans := minPathSum(input)
 	fmt.Printf("%v\n", ans)
 }
@@ -99,12 +100,9 @@ func Test5(t *testing.T) {
 	assert.Equal(t, "bb", longestPalindrome("cbbd"))
 }
 
-
 func add(a, b int) int {
-	return a+b
+	return a + b
 }
-
-
 
 func myadd() {
 	fadd = func(a, b int) int {
@@ -116,11 +114,10 @@ func myadd() {
 
 func TestNilFunc(t *testing.T) {
 	myadd()
-	fadd(1,2)
+	fadd(1, 2)
 	fadd = nil
-	fadd(1,2)
+	fadd(1, 2)
 }
-
 
 func Test63(t *testing.T) {
 	// t.Run(
@@ -146,13 +143,13 @@ func Test63(t *testing.T) {
 	// 		uniquePathsWithObstacles(data)
 	// })
 	t.Run(
-		"test-2", func (t *testing.T)  {
+		"test-2", func(t *testing.T) {
 			data := make([][]int, 3)
-			data[0] = []int{0,0}
-			data[1] = []int{1,1}
-			data[2] = []int{0,0}
+			data[0] = []int{0, 0}
+			data[1] = []int{1, 1}
+			data[2] = []int{0, 0}
 			uniquePathsWithObstacles(data)
-	})
+		})
 }
 
 func TestNil(t *testing.T) {
@@ -163,9 +160,9 @@ func TestNil(t *testing.T) {
 func TestDp120(t *testing.T) {
 	triangle := make([][]int, 4)
 	triangle[0] = []int{2}
-	triangle[1]=[]int{3,4}
-	triangle[2]=[]int{6,5,7}
-	triangle[3] = []int{4,1,8,3}
+	triangle[1] = []int{3, 4}
+	triangle[2] = []int{6, 5, 7}
+	triangle[3] = []int{4, 1, 8, 3}
 	ans := minimumTotal(triangle)
 	fmt.Println(ans)
 }
@@ -187,4 +184,8 @@ func TestDp139(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+func TestLt150(t *testing.T) {
+	n := maxProfit([]int{7, 1, 5, 3, 6, 4})
+	fmt.Println(n)
 }

@@ -96,14 +96,13 @@ type workerResponse struct {
 	ResponseBody interface{} `json:"response-body"`
 }
 
-
 func TestMarshal(t *testing.T) {
 	_, err := ioutil.ReadFile("/tmp")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 	}
-	
-} 
+
+}
 
 // APIAccessToken: Input received from user
 type APIAccessToken struct {
@@ -124,15 +123,31 @@ type APIAccessToken struct {
 	//subject-id of a token, can only be set for internal roles
 	Subject string `json:"-"`
 }
-func TestJson(t *testing.T){
-	token := APIAccessToken {
-		ID: "123456",
-		Role: "observer role",
-		TTL: "60s",
+
+func TestJson(t *testing.T) {
+	token := APIAccessToken{
+		ID:           "123456",
+		Role:         "observer role",
+		TTL:          "60s",
 		Fingerprints: []string{"fp1"},
-		Subject: "subject",
+		Subject:      "subject",
 	}
 
 	bs, _ := json.Marshal(token)
 	fmt.Printf("%s\n", string(bs))
+}
+
+func testcpy(dest, src []int) {
+	copy(dest, src)
+}
+
+func TestCopy(t *testing.T) {
+	arr1 := make([]int, 3)
+	arr2 := make([]int, 1)
+	arr2[0] = 10
+	for i := 0; i < len(arr1); i++ {
+		arr1[i] = i + 20
+	}
+	testcpy(arr2, arr1)
+	fmt.Printf("arr1=%v,arr2=%v\n", arr1, arr2)
 }

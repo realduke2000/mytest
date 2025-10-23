@@ -11,13 +11,3 @@ func reverse189(nums []int) {
 		end--
 	}
 }
-
-func rotate(nums []int, k int) {
-	if k <= 0 || k%len(nums) == 0 || nums == nil || len(nums) <= 1 {
-		return
-	}
-	k = k % len(nums)
-	reverse189(nums)
-	reverse189(nums[:k])
-	reverse189(nums[k:])
-}
