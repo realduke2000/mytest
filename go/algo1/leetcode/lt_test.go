@@ -3,6 +3,8 @@ package leetcode
 import (
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLt27(t *testing.T) {
@@ -43,4 +45,15 @@ func TestLt55(t *testing.T) {
 	// canJump([]int{0, 1})
 	// canJump([]int{1, 2, 3})
 	canJump([]int{3, 2, 1, 0, 4})
+}
+
+
+func TestRoman(t *testing.T) {
+	assert.Equal(t, 4, romanToInt("IV"))
+	assert.Equal(t, 1, romanToInt("I"))
+	assert.Equal(t, 9, romanToInt("IX"))
+	assert.Equal(t, 11, romanToInt("XI"))
+	assert.Equal(t, 3, romanToInt("III"))
+	assert.Equal(t, 58, romanToInt("LVIII"))
+	assert.Equal(t, 1994, romanToInt("MCMXCIV"))
 }
