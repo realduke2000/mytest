@@ -1,6 +1,7 @@
 import time
 import sys
 import re
+import inspect
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options as ChromeOptions
@@ -25,6 +26,11 @@ enable_debugger = False
 SMS_Verification = True              # True 走 SMS 验证；False 保持 PASS 验证
 
 # ===== 工具函数 =====
+STATUS_STARTED = "Started"
+STATUS_SUCCESS = "Success"
+STATUS_FAILED = "Failed"
+STATUS_SKIPPED = "Skipped"
+
 def dom_ready(driver):
     return driver.execute_script("return document.readyState") == "complete"
 
@@ -41,8 +47,12 @@ def where_am_i(driver):
     except Exception:
         return "unknown"
 
-def log_step(step):
-    print(f"\n {step} - Started")
+def func_name(level=0):
+    """level=0 当前函数名，1 调用者，2 调用者的调用者"""
+    return inspect.stack()[level].function
+
+def log_step(id, description, status):
+    print(f"\n Step {id}: {description} - {status}")
     time.sleep(0.2)
 
 def safe_click_by_id(driver, element_id, timeout=15):
@@ -64,6 +74,61 @@ def switch_to_new_window(driver, before_handles, timeout=10):
     driver.switch_to.window(new_handle)
     return new_handle
 
+class Progress:
+    def __init__(self, totalSteps=10):
+        self.step = 0
+        self.totalSteps = totalSteps
+    
+    def nextStep(self):
+        self.step += 1
+        return self.step
+
+
+def OpenAppointmentPage(driver, stepID, timeout=30):
+    desc = ' '.join(re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?![a-z])',func_name()))
+    log_step(stepID, desc, STATUS_STARTED)
+
+    if enable_debugger:
+        driver.get("about:blank")
+        time.sleep(10)
+
+    wait = WebDriverWait(driver, timeout=timeout, poll_frequency=1)
+    driver.get("https://www.chronodigmwatch.co.kr/rolex/contact-seoul/appointment")
+    wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
+    log_step(stepID, desc, STATUS_SUCCESS)
+
+def AcceptCookie(driver, stepID, timeout=30):
+    # Step 1.1: 接受 cookie
+    desc = ' '.join(re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?![a-z])',func_name()))
+    try:
+        log_step(stepID, desc, STATUS_STARTED)
+        wait = WebDriverWait(driver, timeout=timeout, poll_frequency=1)
+        log_step("Step 1.1: click cookie popup if exists")
+        cookie_btn = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, '/html/body/div[1]/div[1]/div/div/button[2]')
+        ))
+        cookie_btn.click()
+        log_step(stepID, desc, STATUS_SUCCESS)
+    except Exception:
+        log_step(stepID, desc, STATUS_SKIPPED)
+
+def ClickAppointmentService(driver, stepID, timeout=30):
+    # Step 2: Click appointment service “서비스 관련 시계 접수 및 수령”
+    desc = ' '.join(re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?![a-z])',func_name()))
+
+    log_step(stepID, desc, STATUS_STARTED)
+    wait = WebDriverWait(driver, timeout=timeout, poll_frequency=1)
+    elem = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="fappointment"]/div[1]/div/div/a[1]')))
+    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", elem)
+    wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="fappointment"]/div[1]/div/div/a[1]'))).click()
+    log_step(stepID, desc, STATUS_SUCCESS)
+    
+    if enable_debugger:
+        # update js get_datetime_list()
+        # set data.popup as ""
+        time.sleep(30)
+    
+
 # ===== 主流程 =====
 def run_chronodigm_appointment_v8(target_date, agency, user_name, user_phone):
     chrome_opts = ChromeOptions()
@@ -75,40 +140,14 @@ def run_chronodigm_appointment_v8(target_date, agency, user_name, user_phone):
     wait = WebDriverWait(driver, timeout=60, poll_frequency=1)
 
     try:
-        # Step 1: 打开页面
-        log_step("Step 1: Open appointment page")
-
-        if enable_debugger:
-            driver.get("about:blank")
-            time.sleep(10)
-
-        driver.get("https://www.chronodigmwatch.co.kr/rolex/contact-seoul/appointment")
-        wait.until(lambda d: d.execute_script("return document.readyState") == "complete")
-
+        progress = Progress()
+        OpenAppointmentPage(driver, progress.nextStep())
         # 记录原窗口句柄，后续实名成功后切回
         original_handle = driver.current_window_handle
-
-        # Step 1.1: 接受 cookie
-        try:
-            log_step("Step 1.1: click cookie popup if exists")
-            cookie_btn = wait.until(EC.element_to_be_clickable(
-                (By.XPATH, '/html/body/div[1]/div[1]/div/div/button[2]')
-            ))
-            cookie_btn.click()
-            print("✅ clicked cookie pop-up")
-        except Exception:
-            print("no cookie pop-up, continue")
-
-        # Step 2: 点击 “서비스 관련 시계 접수 및 수령”
-        log_step("Step 2: click appointment services")
-        elem = wait.until(EC.presence_of_element_located((By.XPATH, '//*[@id="fappointment"]/div[1]/div/div/a[1]')))
-        driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", elem)
-        wait.until(EC.element_to_be_clickable((By.XPATH, '//*[@id="fappointment"]/div[1]/div/div/a[1]'))).click()
-
-        if enable_debugger:
-            # get_datetime_list()
-            # set data.popup as ""
-            time.sleep(30)
+        stepID += 1
+        AcceptCookie(driver, stepID)
+        stepID += 1
+        ClickAppointmentService(driver,stepID)
 
         # Step 3.1: 点击 “동의합니다”
         log_step("Step 3.1: click agree button")
