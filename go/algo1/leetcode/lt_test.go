@@ -57,3 +57,13 @@ func TestRoman(t *testing.T) {
 	assert.Equal(t, 58, romanToInt("LVIII"))
 	assert.Equal(t, 1994, romanToInt("MCMXCIV"))
 }
+
+func TestLt655(t *testing.T) {
+	fmt.Printf("%d\n", 1<<2)
+	var root TreeNode
+	root.Val= 1
+	root.Left = &TreeNode{
+		Val: 2,
+	}
+	printTree(&root)
+}
