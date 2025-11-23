@@ -67,3 +67,11 @@ func TestLt655(t *testing.T) {
 	}
 	printTree(&root)
 }
+func TestLt58(t *testing.T) {
+	n := lengthOfLastWord("a")
+	assert.Equal(t, 1, n)
+	n = lengthOfLastWord("")
+	assert.Equal(t, 0, n)
+	n = lengthOfLastWord(" ")
+	assert.Equal(t, 0, n)
+}
