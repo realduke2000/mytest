@@ -75,3 +75,11 @@ func TestLt58(t *testing.T) {
 	n = lengthOfLastWord(" ")
 	assert.Equal(t, 0, n)
 }
+
+func TestPrefix(t *testing.T) {
+	longestCommonPrefix([]string{"", "a"})
+}
+
+func TestStrstr(t *testing.T) {
+	strStr("abc", "c")
+}
