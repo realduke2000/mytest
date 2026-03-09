@@ -9,3 +9,4 @@ Task state diagram
     pending --> running: client GET /task 
     restarting --> running PATCH /task
 ```
+

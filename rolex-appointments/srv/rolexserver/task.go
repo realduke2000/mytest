@@ -1,16 +1,11 @@
 package rolexserver
 
 import (
-	"container/list"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
-	"sync"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -22,42 +17,6 @@ var (
 	dispatcher Dispatcher
 )
 
-type Buyer struct {
-	Agency string `json:"agency" yaml:"agency"`
-	Name string `json:"name" yaml:"name"`
-	Phone string `json:"phone" yaml:"phone"`
-	SSN6 string `json:"ssn6" yaml:"ssn6"`
-	SSN1 string `json:"ssn1" yaml:"ssn1"`
-}
-
-type Config struct {
-	Buyers []Buyer `yaml:"buyers"`
-	AppointmentDate string `yaml:"appointment_date"`
-}
-
-type Agent struct {
-	ID string `json:"id,omitempty"`
-	Name string `json:"name" validate:"required"`
-	Address string `json:"address" validate:"required,ipv4"`
-}
-
-type TaskNeed struct {
-	ID string `json:"id"`
-	ArtifactB64 string `json:"artifact_b64,omitempty"`
-	Type string `json:"type"` // captcha, SMS
-}
-
-type TaskFulfillment struct {
-	NeedID string `json:"need_id"`
-	Type string `json:"type"`
-	Text string `json:"text"`
-}
-
-type TaskParam struct {
-	TargetDate string `json:"target_date,omitempty"`
-	Buyer *Buyer `json:"buyer,omitempty"`
-}
-
 const (
 	TaskStateCreated = "created"
 	TaskStateRunning = "running"
@@ -66,86 +25,6 @@ const (
 	TaskStateRestarting = "restarting"
 	TaskStateDone = "done"
 )
-
-type TaskProgress struct {
-	Message string `json:"msg,omitempty"`
-	Percent int `json:"percent,omitempty"`
-}
-
-
-type Task struct {
-	ID string `json:"id"`
-	AgentID string `json:"agent_id"`
-	Param *TaskParam `json:"param,omitempty"`
-	Progress *TaskProgress`json:"progress,omitempty"`
-	State string `json:"state"` // created, running, pending, error, restarting, done
-}
-
-func newID(length int) (string, error) {
-	b := make([]byte, length)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-	// 使用URLEncoding避免+、/等特殊字符
-	return base64.URLEncoding.EncodeToString(b)[:length], nil
-}
-
-type Dispatcher struct {
-	buyers *list.List
-	lock sync.Mutex
-}
-
-func InitDispatcher(buyers []Buyer) {
-	// init buyers queue
-	dispatcher = Dispatcher{}
-	dispatcher.buyers =  list.New()
-	for _, b := range buyers {
-		dispatcher.buyers.PushBack(b)
-	}
-}
-
-func (dp *Dispatcher) AssignTask(appointmentDate, agentID string) (Task, error) {
-	if task, err := getTaskByAgentID(agentID); err != nil {
-		slog.Warn("Already assigned task", "taskid", task.ID, "agentid", agentID)
-		return  task, err
-	}
-	var b Buyer
-	var ok bool
-
-	dp.lock.Lock()
-	defer dp.lock.Unlock()
-	if dp.buyers.Len() == 0 {
-		slog.Error("No available buyerbuyer")
-		return Task{}, errors.New("no avaialbe buyer")
-	}
-	front := dp.buyers.Front()
-	if b, ok = front.Value.(Buyer); !ok {
-		slog.Error("invalid buyer queue")
-		return Task{}, errors.New("invalid buyer queue")
-	}
-	dp.buyers.Remove(front)
-
-	if _id, err := newID(8); err != nil {
-		slog.Error("Failed to generate new task ID", "error", err)
-		return Task{}, err
-	} else {
-		task := Task {
-			ID:_id,
-			AgentID: agentID,
-			Param: &TaskParam {
-				TargetDate: appointmentDate,
-				Buyer: &b,
-			},
-			State: TaskStateCreated,
-		}
-		return insertTask(task)
-	}
-}
-
-func (dp *Dispatcher) RegisterAgent(a Agent) error {
-	return insertAgent(a)
-}
 
 func LoadConfig(path string)(*Config, error) {
 	f, err := os.Open(path)
@@ -167,6 +46,11 @@ func LoadConfig(path string)(*Config, error) {
 }
 
 func InitServer(configFilePath string) error {
+	/*
+		Load config
+		Clear expired tasks in DB
+
+	*/
 	cp := ""
 	var err error
 	if configFilePath == "" {
@@ -185,14 +69,21 @@ func InitServer(configFilePath string) error {
 	return  nil
 }
 
-// POST /api/v1/agent
+// PUT /api/v1/agent
 // {
 //  "name": "agent-1",
 // 	"address":"192.168.1.11"
 // }
 func RegisterAgentHandler(w http.ResponseWriter,r *http.Request) {
-	slog.Info("Registered agent")
+	slog.Info("Register agent")
 	var a Agent
+	if _id, ok := r.Context().Value("agent-id").(string); ok {
+		a.ID = _id
+	} else {
+		slog.Error("Invalid agent-id")
+		w.WriteHeader(http.StatusBadRequest)
+		return	
+	}
 	
 	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
 		slog.Error("Failed to read or parse body", "error", err)
@@ -206,7 +97,7 @@ func RegisterAgentHandler(w http.ResponseWriter,r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err := dispatcher.RegisterAgent(a); if err != nil {
+	_, err := dispatcher.RegisterAgent(r.Context(), a); if err != nil {
 		slog.Error("Failed to register agent info", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
@@ -225,14 +116,14 @@ func RegisterAgentHandler(w http.ResponseWriter,r *http.Request) {
 func CreateTaskHandler(w http.ResponseWriter, r *http.Request) {
 	agentID := r.URL.Query().Get("agent_id")
 	slog.Info("Create task", "agentid", agentID)
-	if _, err := getAgentByID(agentID); err != nil {
+	if _, err := dispatcher.store.GetAgentByID(r.Context(),agentID); err != nil {
 		slog.Error("Unregistered agent", "agent_id", agentID)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	var task Task
 	var err error
-	if task, err = dispatcher.AssignTask(ServerConf.AppointmentDate, agentID); err != nil {
+	if task, err = dispatcher.AssignTask(r.Context(), ServerConf.AppointmentDate, agentID); err != nil {
 		slog.Error("Failed to assign task", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -258,14 +149,14 @@ func PostTaskNeedHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	slog.Info("Create task need", "task-id", taskID)
+	slog.Info("Creating task need", "task-id", taskID)
 	var need TaskNeed
 	if err := json.NewDecoder(r.Body).Decode(&need); err != nil {
 		slog.Error("Failed to decode task param", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if tn, err := insertTaskNeed(need); err != nil {
+	if tn, err := dispatcher.store.InsertTaskNeed(r.Context(), need); err != nil {
 		slog.Error("Failed to insert task need", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return 
@@ -276,7 +167,7 @@ func PostTaskNeedHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			w.Write(data)
-			if _, err := insertTaskFulfillment(TaskFulfillment{
+			if _, err := dispatcher.store.InsertTaskFulfillment(r.Context(), TaskFulfillment{
 				NeedID: tn.ID,
 				Type: tn.Type,
 			});err != nil {
@@ -289,9 +180,39 @@ func PostTaskNeedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PATCH /api/v1/task/<task-id>/fulfillment/<nee-id>
+// PUT /api/v1/task/<task-id>/fulfillment/<nee-id>
 // user update fulfillment
-func PatchTaskFulfillmentHandler(w http.ResponseWriter, r *http.Request) {
+func PutTaskFulfillmentHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	var taskID string
+	var ok bool
+	if taskID, ok = vars["task-id"]; !ok {
+		slog.Error("Failed create task need", "task-id", taskID)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if tn, err := dispatcher.store.TaskFulfillmentsColl().(r.Context(), need); err != nil {
+		slog.Error("Failed to update task need", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return 
+	} else {
+		if data, err := json.Marshal(tn); err != nil {
+			slog.Error("Failed to marshal task need", "error", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		} else {
+			w.Write(data)
+			if _, err := dispatcher.store.InsertTaskFulfillment(r.Context(), TaskFulfillment{
+				NeedID: tn.ID,
+				Type: tn.Type,
+			});err != nil {
+				slog.Error("Failed to insert task fulfillment", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			return
+		}
+	}
 }
 
 // GET /api/v1/task/<task-id>/fulfillment/<need-id>

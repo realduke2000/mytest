@@ -5,4 +5,5 @@ buyers:
       ssn1: "2"
       ssn6: "580721"
       agency: ""
-    
+mongo:
+  url: "mongodb://localhost:27017"
