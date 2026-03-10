@@ -83,3 +83,15 @@ func TestPrefix(t *testing.T) {
 func TestStrstr(t *testing.T) {
 	strStr("abc", "c")
 }
+
+func TestLt125(t *testing.T) {
+	assert.Equal(t, true,isPalindrome125("A man, a plan, a canal: Panama"))
+	assert.Equal(t, false,isPalindrome125("race a car"))
+	assert.Equal(t, true,isPalindrome125(" "))
+	
+
+	assert.Equal(t, true,isPalindrome2Pointers("A man, a plan, a canal: Panama"))
+	assert.Equal(t, false,isPalindrome2Pointers("race a car"))
+	assert.Equal(t, true,isPalindrome2Pointers(" "))
+	assert.Equal(t, true,isPalindrome2Pointers("a."))
+}

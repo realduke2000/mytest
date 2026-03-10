@@ -189,3 +189,11 @@ func TestLt150(t *testing.T) {
 	n := maxProfit([]int{7, 1, 5, 3, 6, 4})
 	fmt.Println(n)
 }
+
+func TestDp343(t *testing.T) {
+	assert.Equal(t, 6, integerBreak(5))
+	assert.Equal(t, 9, integerBreak(6))
+	assert.Equal(t, 12, integerBreak(7))
+	assert.Equal(t, 18, integerBreak(8))
+	assert.Equal(t, 36, integerBreak(10))
+}
